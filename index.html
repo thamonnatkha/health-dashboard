@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Tracker Dashboard - สรุปข้อมูลสุขภาพ 7 วัน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --accent-green: #10b981;
+            --accent-green-light: #d1fae5;
+            --accent-blue: #0ea5e9;
+            --accent-blue-light: #e0f2fe;
+            --accent-indigo: #6366f1;
+            --accent-indigo-light: #e0e7ff;
+            --accent-amber: #f59e0b;
+            --accent-amber-light: #fef3c7;
+            --accent-red: #ef4444;
+            --accent-red-light: #fee2e2;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .profile-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .badge-pill {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .kpi-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .kpi-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .kpi-value {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .kpi-value span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .kpi-footer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .status-tag {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .status-success { background: var(--accent-green-light); color: #065f46; }
+        .status-warning { background: var(--accent-amber-light); color: #92400e; }
+        .status-danger  { background: var(--accent-red-light); color: #991b1b; }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 540px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 260px;
+            width: 100%;
+        }
+
+        /* Filter Buttons */
+        .filter-group {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .filter-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        .activity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .act-run  { background: #dcfce7; color: #166534; }
+        .act-bike { background: #e0f2fe; color: #075985; }
+        .act-swim { background: #e0e7ff; color: #3730a3; }
+        .act-rest { background: #f1f5f9; color: #475569; }
+
+        /* Progress Bar in Table */
+        .progress-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 130px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--accent-blue);
+        }
+
+        /* Coach Insight Box */
+        .insight-box {
+            margin-top: 24px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+            border: 1px solid #bbf7d0;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .insight-box h3 {
+            font-size: 1.05rem;
+            color: #065f46;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-list {
+            list-style: none;
+            display: grid;
+            gap: 8px;
+            font-size: 0.92rem;
+            color: #1e293b;
+        }
+
+        .insight-list li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .insight-list li::before {
+            content: "•";
+            color: #10b981;
+            font-weight: bold;
+            position: absolute;
+            left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <h1>📊 Health Tracker Dashboard</h1>
+            <p>สรุปข้อมูลสุขภาพรายสัปดาห์ (7 – 13 กันยายน)</p>
+        </div>
+        <div class="profile-badges">
+            <div class="badge-pill">⚖️ น้ำหนักตัว: <strong>85 กก.</strong></div>
+            <div class="badge-pill">🎯 เป้าหมายออกกำลังกาย: <strong>5 วัน/สัปดาห์</strong></div>
+            <div class="badge-pill">💧 เป้าหมายน้ำดื่ม: <strong>2.55 – 3.0 ลิตร/วัน</strong></div>
+        </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">จำนวนวันออกกำลังกาย</span>
+                <div class="kpi-icon" style="background: var(--accent-green-light); color: var(--accent-green);">🏃</div>
+            </div>
+            <div class="kpi-value">6 <span>/ 7 วัน</span></div>
+            <div class="kpi-footer">
+                <span class="status-tag status-success">เกินเป้าหมาย (+1 วัน)</span>
+                <span style="color: var(--text-secondary);">เป้า 5 วัน</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">เวลาออกกำลังกายรวม</span>
+                <div class="kpi-icon" style="background: var(--accent-indigo-light); color: var(--accent-indigo);">⏱️</div>
+            </div>
+            <div class="kpi-value">270 <span>นาที</span></div>
+            <div class="kpi-footer">
+                <span class="status-tag status-success">4 ชม. 30 นาที</span>
+                <span style="color: var(--text-secondary);">เกณฑ์ 150 นาที</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">ชั่วโมงนอนเฉลี่ย</span>
+                <div class="kpi-icon" style="background: var(--accent-amber-light); color: var(--accent-amber);">🌙</div>
+            </div>
+            <div class="kpi-value">6.96 <span>ชม./คืน</span></div>
+            <div class="kpi-footer">
+                <span class="status-tag status-warning">ใกล้เคียงเกณฑ์</span>
+                <span style="color: var(--text-secondary);">เกณฑ์ 7–9 ชม.</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-title">ปริมาณดื่มน้ำเฉลี่ย</span>
+                <div class="kpi-icon" style="background: var(--accent-blue-light); color: var(--accent-blue);">💧</div>
+            </div>
+            <div class="kpi-value">1.71 <span>ลิตร/วัน</span></div>
+            <div class="kpi-footer">
+                <span class="status-tag status-danger">ต่ำกว่าเกณฑ์</span>
+                <span style="color: var(--text-secondary);">ควรดื่ม ~2.55+ ลิตร</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="charts-grid">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">แนวโน้มชั่วโมงการนอน 7 วัน</div>
+                    <div class="card-subtitle">เส้นประสีเขียวแสดงเกณฑ์ขั้นต่ำมาตรฐาน (7.0 ชม./คืน)</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="sleepChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">แนวโน้มปริมาณการดื่มน้ำ 7 วัน</div>
+                    <div class="card-subtitle">เส้นประสีฟ้าแสดงเกณฑ์ขั้นต่ำสำหรับน้ำหนัก 85 กก. (2.55 ลิตร/วัน)</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="waterChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Daily Activity Log -->
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">รายการกิจกรรมและบันทึกสุขภาพรายวัน</div>
+                <div class="card-subtitle">แสดงรายละเอียดครบทั้ง 3 ด้านในแต่ละวัน</div>
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="filterTable('all', this)">ทั้งหมด (7)</button>
+                <button class="filter-btn" onclick="filterTable('workout', this)">วันออกกำลังกาย (6)</button>
+                <button class="filter-btn" onclick="filterTable('rest', this)">วันพักผ่อน (1)</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="activityTable">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>กิจกรรมออกกำลังกาย</th>
+                        <th>ระยะเวลา</th>
+                        <th>การนอนหลับ</th>
+                        <th>การดื่มน้ำ (เป้า 2.55 ลิตร)</th>
+                        <th>สถานะภาพรวม</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Health Tracker Quick Assessment -->
+    <section class="insight-box">
+        <h3>🩺 สรุปการประเมินจาก Health Tracker (น้ำหนักตัว 85 กก.)</h3>
+        <ul class="insight-list">
+            <li><strong>การออกกำลังกาย (ดีเยี่ยม):</strong> ออกกำลังกายไปถึง 6 วัน รวม 270 นาที ทะลุเป้าหมาย 5 วัน/สัปดาห์ และหลากหลายทั้งวิ่ง ปั่นจักรยาน และว่ายน้ำ</li>
+            <li><strong>การนอนหลับ (เกือบผ่านเกณฑ์):</strong> เฉลี่ย 6.96 ชม./คืน มี 5 วันที่นอนครบ 7 ชม. ขึ้นไป แต่ควรเพิ่มเวลานอนในวันอังคารและเสาร์ (6.5 ชม.) ให้ถึง 7 ชม.</li>
+            <li><strong>การดื่มน้ำ (ควรปรับปรุงเร่งด่วน):</strong> เฉลี่ย 1.71 ลิตร/วัน ซึ่งน้อยกว่าเกณฑ์สำหรับน้ำหนัก 85 กก. (2.55–3.0 ลิตร) ประมาณ 0.8–1.2 ลิตรต่อวัน โดยเฉพาะวันที่ออกกำลังกายหนักควรจิบน้ำเพิ่มระหว่างวัน</li>
+        </ul>
+    </section>
+</div>
+
+<script>
+    const healthData = [
+        { date: "7 ก.ย. (จันทร์)", activity: "วิ่ง", type: "run", isWorkout: true, duration: 30, sleep: 7.2, water: 1.8 },
+        { date: "8 ก.ย. (อังคาร)", activity: "ปั่นจักรยาน", type: "bike", isWorkout: true, duration: 45, sleep: 6.5, water: 1.5 },
+        { date: "9 ก.ย. (พุธ)", activity: "วิ่ง", type: "run", isWorkout: true, duration: 45, sleep: 7.0, water: 1.7 },
+        { date: "10 ก.ย. (พฤหัสบดี)", activity: "ว่ายน้ำ", type: "swim", isWorkout: true, duration: 45, sleep: 7.0, water: 1.8 },
+        { date: "11 ก.ย. (ศุกร์)", activity: "ปั่นจักรยาน", type: "bike", isWorkout: true, duration: 60, sleep: 7.5, water: 1.5 },
+        { date: "12 ก.ย. (เสาร์)", activity: "ไม่ออกกำลังกาย", type: "rest", isWorkout: false, duration: 0, sleep: 6.5, water: 2.0 },
+        { date: "13 ก.ย. (อาทิตย์)", activity: "วิ่ง", type: "run", isWorkout: true, duration: 45, sleep: 7.0, water: 1.7 }
+    ];
+
+    const activityIcons = {
+        run: "🏃 วิ่ง",
+        bike: "🚴 ปั่นจักรยาน",
+        swim: "🏊 ว่ายน้ำ",
+        rest: "🛋️ พักผ่อน"
+    };
+
+    function renderTable(filter = 'all') {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        const filtered = healthData.filter(item => {
+            if (filter === 'workout') return item.isWorkout;
+            if (filter === 'rest') return !item.isWorkout;
+            return true;
+        });
+
+        filtered.forEach(item => {
+            const waterPct = Math.min(100, Math.round((item.water / 2.55) * 100));
+            const sleepBadge = item.sleep >= 7.0 
+                ? `<span class="status-tag status-success">${item.sleep} ชม.</span>` 
+                : `<span class="status-tag status-warning">${item.sleep} ชม.</span>`;
+
+            let overallNote = "";
+            if (item.isWorkout && item.sleep >= 7.0) {
+                overallNote = "แอคทีฟ + นอนพอ (เพิ่มน้ำอีกนิด)";
+            } else if (item.isWorkout && item.sleep < 7.0) {
+                overallNote = "ออกกำลังกายดี แต่ควรนอนเพิ่ม";
+            } else {
+                overallNote = "วันพักฟื้น ดื่มน้ำได้สูงสุดของสัปดาห์";
+            }
+
+            const row = `
+                <tr>
+                    <td><strong>${item.date}</strong></td>
+                    <td><span class="activity-badge act-${item.type}">${activityIcons[item.type]}</span></td>
+                    <td>${item.duration > 0 ? `<strong>${item.duration}</strong> นาที` : '-'}</td>
+                    <td>${sleepBadge}</td>
+                    <td>
+                        <div class="progress-wrap">
+                            <span style="min-width: 55px; font-weight: 500;">${item.water.toFixed(1)} ล.</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${waterPct}%; background: ${item.water >= 2.0 ? '#0ea5e9' : '#38bdf8'};"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">${overallNote}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function filterTable(type, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTable(type);
+    }
+
+    // Initialize Table
+    renderTable();
+
+    // Chart Labels
+    const labels = ["7 ก.ย. (จ.)", "8 ก.ย. (อ.)", "9 ก.ย. (พ.)", "10 ก.ย. (พฤ.)", "11 ก.ย. (ศ.)", "12 ก.ย. (ส.)", "13 ก.ย. (อา.)"];
+
+    // Sleep Chart
+    const sleepCtx = document.getElementById('sleepChart').getContext('2d');
+    new Chart(sleepCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'ชั่วโมงการนอน (ชม.)',
+                data: healthData.map(d => d.sleep),
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                borderWidth: 3,
+                pointBackgroundColor: healthData.map(d => d.sleep >= 7.0 ? '#10b981' : '#f59e0b'),
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` นอนหลับ: ${ctx.parsed.y} ชั่วโมง`
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        targetLine: {
+                            type: 'line',
+                            yMin: 7.0,
+                            yMax: 7.0,
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: {
+                                display: true,
+                                content: 'เกณฑ์ขั้นต่ำ 7.0 ชม.',
+                                position: 'end',
+                                backgroundColor: '#10b981',
+                                color: '#fff',
+                                font: { size: 11, family: 'Prompt' }
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 5.5,
+                    max: 8.5,
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { family: 'Prompt' } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Prompt' } }
+                }
+            }
+        }
+    });
+
+    // Water Chart
+    const waterCtx = document.getElementById('waterChart').getContext('2d');
+    new Chart(waterCtx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'ปริมาณน้ำดื่ม (ลิตร)',
+                data: healthData.map(d => d.water),
+                backgroundColor: healthData.map(d => d.water >= 2.0 ? '#0284c7' : '#38bdf8'),
+                borderRadius: 8,
+                barThickness: 28
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` ดื่มน้ำ: ${ctx.parsed.y} ลิตร`
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        targetLine: {
+                            type: 'line',
+                            yMin: 2.55,
+                            yMax: 2.55,
+                            borderColor: '#0284c7',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: {
+                                display: true,
+                                content: 'เกณฑ์ขั้นต่ำ 2.55 ลิตร',
+                                position: 'end',
+                                backgroundColor: '#0284c7',
+                                color: '#fff',
+                                font: { size: 11, family: 'Prompt' }
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 3.2,
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { family: 'Prompt' } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Prompt' } }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
